@@ -131,7 +131,6 @@ export enum TARGET_TABLES {
   ATS_JOB_POSTING = 'ats_job_posting',
   ATS_OFFER = 'ats_offer',
   ATS_SCHEDULED_INTERVIEW = 'ats_scheduled_interview',
-  ATS_TAG = 'ats_tag',
 }
 
 export const TARGET_TABLES_META = {
@@ -342,14 +341,6 @@ export const TARGET_TABLES_META = {
     icon: 'calendar',
     label: 'ATS_Scheduled_Interview',
     description: 'Represents schedule of interview data.',
-    required: false,
-  },
-  [TARGET_TABLES.ATS_TAG]: {
-    category: SyncCategory.ATS,
-    value: TARGET_TABLES.ATS_TAG,
-    icon: 'label',
-    label: 'ATS_Tag',
-    description: 'Represents tags of some other table data.',
     required: false,
   },
 };
