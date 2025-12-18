@@ -1,9 +1,7 @@
-version: '3'
-
 x-uffizzi:
   ingress:
     service: nocodb
-    port: 8080
+    port: 8081
 
 services:
   postgres:
@@ -28,12 +26,13 @@ services:
         limits:
           memory: 500M
   nocodb:
-    image: "${NOCODB_IMAGE}"
+    image: "${NOCODB_IMAGE:-nocodb/nocodb:latest}"
     ports:
-      - "8080:8080"
+      - "8081:8081"
     entrypoint: /bin/sh
     command: ["-c", "apk add wait4ports && wait4ports tcp://localhost:5432 && /usr/src/appEntry/start.sh"]
     environment:
+      PORT: 8081
       NC_DB: "pg://localhost:5432?u=postgres&p=password&d=root_db"
       NC_ADMIN_EMAIL: admin@nocodb.com
       NC_ADMIN_PASSWORD: password

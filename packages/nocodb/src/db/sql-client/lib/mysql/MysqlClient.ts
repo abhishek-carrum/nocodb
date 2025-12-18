@@ -22,9 +22,33 @@ const evt = new Emit();
 
 class MysqlClient extends KnexClient {
   protected types: any;
+  protected readerClient: any;
+  protected useReadWriteSplit: boolean;
 
   constructor(connectionConfig) {
-    super(connectionConfig);
+    // Check if read-write split is configured
+    const hasReaderConfig =
+      connectionConfig.reader && connectionConfig.reader.connection;
+
+    if (hasReaderConfig) {
+      // Create writer connection (default)
+      super(connectionConfig);
+      this.useReadWriteSplit = true;
+
+      // Create reader connection
+      const readerConfig = {
+        ...connectionConfig,
+        connection: connectionConfig.reader.connection,
+        pool: connectionConfig.reader.pool || connectionConfig.pool,
+      };
+      this.readerClient = knex(readerConfig);
+    } else {
+      // Use single connection (backward compatible)
+      super(connectionConfig);
+      this.useReadWriteSplit = false;
+      this.readerClient = null;
+    }
+
     this.queries = queries;
     this._version = {};
   }
@@ -51,6 +75,105 @@ class MysqlClient extends KnexClient {
       status: -1,
       data: `SQL : ${data}`,
     });
+  }
+
+  /**
+   * Determines if a SQL query is a read operation
+   * @param {string} query - SQL query string
+   * @returns {boolean} - true if read operation, false if write operation
+   */
+  _isReadOperation(query: string): boolean {
+    if (!query) return false;
+    const trimmedQuery = query.trim().toUpperCase();
+    const readKeywords = ['SELECT', 'SHOW', 'DESCRIBE', 'DESC', 'EXPLAIN'];
+    const writeKeywords = [
+      'INSERT',
+      'UPDATE',
+      'DELETE',
+      'CREATE',
+      'ALTER',
+      'DROP',
+      'TRUNCATE',
+      'RENAME',
+      'GRANT',
+      'REVOKE',
+      'FLUSH',
+    ];
+
+    // Check for write operations first (they take precedence)
+    for (const keyword of writeKeywords) {
+      if (trimmedQuery.startsWith(keyword)) {
+        return false;
+      }
+    }
+
+    // Check for read operations
+    for (const keyword of readKeywords) {
+      if (trimmedQuery.startsWith(keyword)) {
+        return true;
+      }
+    }
+
+    // Default to writer for safety (unknown operations go to writer)
+    return false;
+  }
+
+  /**
+   * Gets the appropriate client (reader or writer) based on query type
+   * @param {string} query - SQL query string
+   * @returns {any} - knex client instance
+   */
+  _getClientForQuery(query: string): any {
+    if (!this.useReadWriteSplit || !this.readerClient) {
+      return this.sqlClient;
+    }
+
+    if (this._isReadOperation(query)) {
+      return this.readerClient;
+    }
+
+    return this.sqlClient; // Writer for writes and unknown operations
+  }
+
+  /**
+   * Override raw method to route queries to appropriate connection
+   * @param {string} statements - SQL statement(s)
+   * @param {...any} args - Query parameters
+   * @returns {Promise<any>} - Query result
+   */
+  async raw(statements, ...args) {
+    if (!this.useReadWriteSplit || !this.readerClient) {
+      return super.raw(statements, ...args);
+    }
+
+    // Determine if this is a read operation
+    const queryString =
+      typeof statements === 'string' ? statements : statements.toString();
+    const client = this._getClientForQuery(queryString);
+
+    // Use the appropriate client
+    if (client === this.readerClient) {
+      const start = new Date().getTime();
+      let response = null;
+      let end = null;
+      let timeTaken = null;
+      try {
+        response = await this.readerClient.raw(statements, ...args);
+        end = new Date().getTime();
+        timeTaken = end - start;
+        log.api(`Query (READ): (${queryString}) [Took: ${timeTaken} ms]`);
+        this.emit(`${queryString} [Took: ${timeTaken} ms]`);
+        return response;
+      } catch (e) {
+        end = new Date().getTime();
+        timeTaken = end - start;
+        this.emitE(`${e} [Took: ${timeTaken} ms]`);
+        throw e;
+      }
+    } else {
+      // Use writer (default behavior)
+      return super.raw(statements, ...args);
+    }
   }
 
   /**
@@ -129,8 +252,12 @@ class MysqlClient extends KnexClient {
     log.api(`${func}:args:`, args);
 
     try {
-      // await this.sqlClient.raw(this.getQuery(_func))
-      await this.sqlClient.raw('SELECT 1+1 as data');
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      await client.raw('SELECT 1+1 as data');
     } catch (e) {
       // log.ppe(e);
       result.code = -1;
@@ -233,7 +360,12 @@ class MysqlClient extends KnexClient {
 
     try {
       result.data.object = {};
-      const data = await this.sqlClient.raw('select version() as version');
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      const data = await client.raw('select version() as version');
       log.debug(data[0][0]);
       result.data.object.version = data[0][0].version;
       const versions = data[0][0].version.split('.');
@@ -459,7 +591,12 @@ class MysqlClient extends KnexClient {
     log.api(`${func}:args:`, args);
 
     try {
-      const response = await this.sqlClient.raw('SHOW databases');
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      const response = await client.raw('SHOW databases');
 
       log.debug(response.length);
 
@@ -497,7 +634,12 @@ class MysqlClient extends KnexClient {
     log.api(`${func}:args:`, args);
 
     try {
-      const response = await this.sqlClient.raw(
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      const response = await client.raw(
         `SHOW FULL TABLES WHERE TABLE_TYPE NOT LIKE 'VIEW'`,
       );
       // const keyInResponse = `Tables_in_${
@@ -544,7 +686,12 @@ class MysqlClient extends KnexClient {
     log.api(`${func}:args:`, args);
 
     try {
-      const response = await this.sqlClient.raw(
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      const response = await client.raw(
         `select schema_name 
                     from 
                         information_schema.schemata 
@@ -605,7 +752,12 @@ class MysqlClient extends KnexClient {
     try {
       args.databaseName = this.connectionConfig.connection.database;
 
-      const response = await this.sqlClient.raw(
+      // Use reader for read operations
+      const client =
+        this.useReadWriteSplit && this.readerClient
+          ? this.readerClient
+          : this.sqlClient;
+      const response = await client.raw(
         await this._getQuery({
           func,
         }),

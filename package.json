@@ -88,6 +88,7 @@
       "@types/mime": "npm:@types/mime@npm:nonexistent"
     },
     "onlyBuiltDependencies": [
+      "@biomejs/biome",
       "@nestjs/core",
       "@parcel/watcher",
       "@swc/core",

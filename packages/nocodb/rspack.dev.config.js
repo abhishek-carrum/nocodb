@@ -4,6 +4,14 @@ const nodeExternals = require('webpack-node-externals');
 const { RunScriptWebpackPlugin } = require('run-script-webpack-plugin');
 const { TsCheckerRspackPlugin } = require('ts-checker-rspack-plugin');
 
+// Load .env file if it exists
+try {
+  const dotenv = require('dotenv');
+  dotenv.config({ path: resolve(__dirname, '.env') });
+} catch (e) {
+  // dotenv not available or .env doesn't exist, that's okay
+}
+
 const baseDevConfig = {
   mode: 'development',
   target: 'node',
@@ -67,7 +75,10 @@ const baseDevConfig = {
       configFile: resolve('tsconfig.json'),
     },
     alias: {
-      '@noco-local-integrations': resolve(__dirname, '../noco-integrations/packages'),
+      '@noco-local-integrations': resolve(
+        __dirname,
+        '../noco-integrations/packages',
+      ),
     },
   },
   optimization: {
@@ -79,6 +90,7 @@ const baseDevConfig = {
       EE: true,
       NODE_ENV: 'development',
     }),
+    new rspack.EnvironmentPlugin(['PORT']), // Include PORT from environment
     new RunScriptWebpackPlugin({
       name: 'main.js',
       // Set autorestart false when enabling HMR
@@ -121,6 +133,12 @@ const baseDevConfig = {
     ignored: /node_modules/,
     poll: 100,
   },
+  ignoreWarnings: [
+    {
+      module: /require-in-the-middle/,
+      message: /Critical dependency.*require function is used/,
+    },
+  ],
 };
 
 module.exports = baseDevConfig;

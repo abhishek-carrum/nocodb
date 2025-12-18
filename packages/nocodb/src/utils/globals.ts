@@ -1,3 +1,8 @@
+export enum BaseVersion {
+  V1 = 1,
+  V2 = 2,
+}
+
 export enum MetaTable {
   PROJECT = 'nc_bases_v2',
   SOURCES = 'nc_sources_v2',

@@ -10,6 +10,85 @@
  */
 
 /**
+ * Script with additional info
+ */
+export interface ScriptGetResponseV3Type {
+  /** Unique identifier for the script */
+  id: string;
+  /** Title of the script. */
+  title: string;
+  /** Description of the script. */
+  description?: string | null;
+  /** Script content. */
+  script: string;
+  /** Configuration for the script. */
+  config?: object;
+  /** Metadata of the script. */
+  meta?: object;
+  /** Unique identifier for the base */
+  base_id: string;
+  /** Unique identifier for the workspace */
+  workspace_id: string;
+  /**
+   * Timestamp when the script was created
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * Timestamp when the script was last updated
+   * @format date-time
+   */
+  updated_at: string;
+}
+
+/**
+ * Script update request body
+ */
+export interface ScriptUpdateReqV3Type {
+  /** Title of the script. */
+  title?: string;
+  /** Description of the script. */
+  description?: string | null;
+  /** Script content. */
+  script?: string;
+  /** Configuration for the script. */
+  config?: object;
+  /** Metadata for the script. */
+  meta?: object;
+}
+
+/**
+ * Script create request body
+ */
+export interface ScriptCreateReqV3Type {
+  /** Title of the script. */
+  title: string;
+  /** Description of the script. */
+  description?: string | null;
+  /** Script content. */
+  script?: string;
+  /** Configuration for the script. */
+  config?: object;
+  /** Metadata for the script. */
+  meta?: object;
+}
+
+export interface ScriptListV3Type {
+  list: {
+    /** Unique identifier for the script. */
+    id: string;
+    /** Title of the script. */
+    title: string;
+    /** Description of the script. */
+    description?: string | null;
+    /** Unique identifier for the base to which this script belongs to. */
+    base_id: string;
+    /** Unique identifier for the workspace to which this base belongs to. */
+    workspace_id: string;
+  }[];
+}
+
+/**
  * Workspace roles for the user.
  */
 export enum WorkspaceRolesV3Type {
@@ -1006,8 +1085,6 @@ export type ViewV3Type = {
   id: string;
   /** Id of table associated with the view. */
   table_id?: string;
-  /** Indicates if this is the default view. Omitted if not the default view. */
-  is_default?: boolean;
 } & ViewBaseV3Type & {
     /** User ID of the creator. */
     created_by?: string;
@@ -1405,8 +1482,6 @@ export interface ViewListV3Type {
     type: 'grid' | 'gallery' | 'kanban' | 'calendar' | 'form';
     /** View configuration edit state. */
     lock_type: 'collaborative' | 'locked' | 'personal';
-    /** Indicates if this is the default view. */
-    is_default?: boolean;
     /** User ID of the creator. */
     created_by: string;
     /** User ID of the owner. Applicable only for personal views. */

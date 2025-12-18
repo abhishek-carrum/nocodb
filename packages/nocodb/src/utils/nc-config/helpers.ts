@@ -321,5 +321,61 @@ export async function metaUrlToDbConfig(urlString): Promise<DbConfig> {
     }
   }
 
+  // Check for read-write split configuration for MySQL
+  if (
+    (dbConfig.client === DriverClient.MYSQL ||
+      dbConfig.client === DriverClient.MYSQL_LEGACY) &&
+    process.env.WRITER_DB_SCHEMA &&
+    process.env.READER_DB_SCHEMA
+  ) {
+    // Writer connection config
+    const writerConfig = {
+      ...defaultConnectionConfig,
+      host: process.env.WRITER_DB_HOSTNAME || dbConfig.connection.host,
+      port: +(process.env.WRITER_DB_PORT || dbConfig.connection.port || 3306),
+      user: process.env.WRITER_DB_USERNAME || dbConfig.connection.user,
+      password: process.env.WRITER_DB_PASSWORD || dbConfig.connection.password,
+      database: process.env.WRITER_DB_SCHEMA || dbConfig.connection.database,
+    };
+
+    // Reader connection config
+    const readerConfig = {
+      ...defaultConnectionConfig,
+      host: process.env.READER_DB_HOSTNAME || dbConfig.connection.host,
+      port: +(process.env.READER_DB_PORT || dbConfig.connection.port || 3306),
+      user: process.env.READER_DB_USERNAME || dbConfig.connection.user,
+      password: process.env.READER_DB_PASSWORD || dbConfig.connection.password,
+      database: process.env.READER_DB_SCHEMA || dbConfig.connection.database,
+    };
+
+    // Writer pool config
+    const writerPool = {
+      min: +(process.env.WRITER_DB_POOL_MIN || 1),
+      max: +(process.env.WRITER_DB_POOL_MAX || 10),
+      acquireTimeoutMillis: +(
+        process.env.WRITER_DB_POOL_ACQUIRE || 30000
+      ),
+      idleTimeoutMillis: +(process.env.WRITER_DB_POOL_IDLE || 10000),
+    };
+
+    // Reader pool config
+    const readerPool = {
+      min: +(process.env.READER_DB_POOL_MIN || 1),
+      max: +(process.env.READER_DB_POOL_MAX || 10),
+      acquireTimeoutMillis: +(
+        process.env.READER_DB_POOL_ACQUIRE || 30000
+      ),
+      idleTimeoutMillis: +(process.env.READER_DB_POOL_IDLE || 10000),
+    };
+
+    // Set up read-write split configuration
+    dbConfig.connection = writerConfig; // Default to writer for backward compatibility
+    dbConfig.pool = writerPool;
+    dbConfig.reader = {
+      connection: readerConfig,
+      pool: readerPool,
+    };
+  }
+
   return dbConfig;
 }

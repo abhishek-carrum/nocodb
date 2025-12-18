@@ -29,10 +29,21 @@ interface DbConfig {
     min?: number;
     max?: number;
     idleTimeoutMillis?: number;
+    acquireTimeoutMillis?: number;
   };
   migrations?: {
     directory?: string;
     tableName?: string;
+  };
+  // Read-write split configuration for MySQL
+  reader?: {
+    connection: Connection;
+    pool?: {
+      min?: number;
+      max?: number;
+      idleTimeoutMillis?: number;
+      acquireTimeoutMillis?: number;
+    };
   };
 }
 

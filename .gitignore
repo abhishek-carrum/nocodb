@@ -100,3 +100,12 @@ httpbin
 result
 
 .cursorignore
+
+# Environment variables (sensitive data)
+.env
+.env.local
+.env.*.local
+packages/nocodb/.env
+packages/nocodb/.env.local
+**/.env
+**/.env.local

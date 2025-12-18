@@ -21,6 +21,8 @@ import * as nc_030_add_description_field from '~/meta/migrations/v2/nc_030_add_d
 import * as nc_031_remove_fk_and_add_idx from '~/meta/migrations/v2/nc_031_remove_fk_and_add_idx';
 import * as nc_033_add_group_by from '~/meta/migrations/v2/nc_033_add_group_by';
 import * as nc_034_erd_filter_and_notification from '~/meta/migrations/v2/nc_034_erd_filter_and_notification';
+import * as nc_034_fix_is_deleted from '~/meta/migrations/v2/nc_034_fix_is_deleted';
+import * as nc_034_migrate_notification_schema from '~/meta/migrations/v2/nc_034_migrate_notification_schema';
 import * as nc_035_add_username_to_users from '~/meta/migrations/v2/nc_035_add_username_to_users';
 import * as nc_036_base_deleted from '~/meta/migrations/v2/nc_036_base_deleted';
 import * as nc_037_rename_project_and_base from '~/meta/migrations/v2/nc_037_rename_project_and_base';
@@ -110,6 +112,8 @@ export default class XcMigrationSourcev2 {
       'nc_031_remove_fk_and_add_idx',
       'nc_033_add_group_by',
       'nc_034_erd_filter_and_notification',
+      'nc_034_fix_is_deleted',
+      'nc_034_migrate_notification_schema',
       'nc_035_add_username_to_users',
       'nc_036_base_deleted',
       'nc_037_rename_project_and_base',
@@ -222,6 +226,10 @@ export default class XcMigrationSourcev2 {
         return nc_033_add_group_by;
       case 'nc_034_erd_filter_and_notification':
         return nc_034_erd_filter_and_notification;
+      case 'nc_034_fix_is_deleted':
+        return nc_034_fix_is_deleted;
+      case 'nc_034_migrate_notification_schema':
+        return nc_034_migrate_notification_schema;
       case 'nc_035_add_username_to_users':
         return nc_035_add_username_to_users;
       case 'nc_036_base_deleted':
