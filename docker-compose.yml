@@ -31,11 +31,22 @@ services:
       - "8081:8081"
     entrypoint: /bin/sh
     command: ["-c", "apk add wait4ports && wait4ports tcp://localhost:5432 && /usr/src/appEntry/start.sh"]
+    env_file:
+      - .env
     environment:
       PORT: 8081
       NC_DB: "pg://localhost:5432?u=postgres&p=password&d=root_db"
       NC_ADMIN_EMAIL: admin@nocodb.com
       NC_ADMIN_PASSWORD: password
+      # SMTP configuration (can be overridden by .env file)
+      NC_SMTP_FROM: "${NC_SMTP_FROM:-}"
+      NC_SMTP_HOST: "${NC_SMTP_HOST:-}"
+      NC_SMTP_PORT: "${NC_SMTP_PORT:-}"
+      NC_SMTP_USERNAME: "${NC_SMTP_USERNAME:-}"
+      NC_SMTP_PASSWORD: "${NC_SMTP_PASSWORD:-}"
+      NC_SMTP_SECURE: "${NC_SMTP_SECURE:-false}"
+      NC_SMTP_IGNORE_TLS: "${NC_SMTP_IGNORE_TLS:-false}"
+      NC_SMTP_REJECT_UNAUTHORIZED: "${NC_SMTP_REJECT_UNAUTHORIZED:-false}"
     deploy:
       resources:
         limits:

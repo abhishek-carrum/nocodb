@@ -306,4 +306,50 @@ export class DataAliasController {
     res.setHeader('xc-db-response', elapsedSeconds);
     res.json(groupedData);
   }
+
+  @Get([
+    '/api/v1/db/data/:orgs/:baseName/custom-sql',
+    '/api/v2/bases/:baseId/custom-sql',
+  ])
+  @Acl('dataList')
+  async executeCustomSql(
+    @TenantContext() context: NcContext,
+    @Req() req: NcRequest,
+    @Res() res: Response,
+    @Param('baseName') baseName: string,
+    @Param('baseId') baseId: string,
+    @Query('sql') sqlQuery: string,
+    @Query('sourceId') sourceId?: string,
+  ) {
+    if (!sqlQuery) {
+      return res.status(400).json({
+        error: 'SQL query parameter is required. Use ?sql=YOUR_QUERY',
+      });
+    }
+
+    const startTime = process.hrtime();
+
+    // Get baseId from baseName if using v1 API
+    let actualBaseId = baseId;
+    if (!actualBaseId && baseName) {
+      const { Base } = await import('~/models');
+      const base = await Base.getByTitleOrId(context, baseName);
+      if (!base) {
+        return res.status(404).json({ error: 'Base not found' });
+      }
+      actualBaseId = base.id;
+    }
+
+    const responseData = await this.datasService.executeCustomSql(context, {
+      baseId: actualBaseId,
+      sourceId: sourceId,
+      sqlQuery: decodeURIComponent(sqlQuery),
+    });
+
+    const elapsedMilliSeconds = parseHrtimeToMilliSeconds(
+      process.hrtime(startTime),
+    );
+    res.setHeader('xc-db-response', elapsedMilliSeconds);
+    res.json(responseData);
+  }
 }

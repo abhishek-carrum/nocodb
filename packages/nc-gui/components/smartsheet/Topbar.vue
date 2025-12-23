@@ -24,6 +24,10 @@ const { isFeatureEnabled } = useBetaFeatureToggle()
 
 const isSharedBase = computed(() => route.value.params.typeOrId === 'base')
 
+const { base } = storeToRefs(useBase())
+
+const isCustomSqlModalOpen = ref(false)
+
 const topbarBreadcrumbItemWidth = computed(() => {
   if (!isSharedBase.value && !isMobileMode.value) {
     return 'calc(\(100% - 167px - 24px\) / 2)'
@@ -67,6 +71,21 @@ const topbarBreadcrumbItemWidth = computed(() => {
       </div>
 
       <div class="flex items-center justify-end gap-2 flex-1">
+        <NcButton
+          v-if="!isSharedBase && !activeAutomationId && !activeDashboardId && !isMobileMode && base"
+          v-e="['c:custom-sql']"
+          type="secondary"
+          size="small"
+          class="nc-custom-sql-btn"
+          data-testid="nc-custom-sql-btn"
+          @click="isCustomSqlModalOpen = true"
+        >
+          <div class="flex items-center gap-1.5">
+            <GeneralIcon icon="ncCode" class="w-4 h-4" />
+            <span class="xs:hidden">{{ $t('activity.customSqlQuery') || 'Custom SQL' }}</span>
+          </div>
+        </NcButton>
+
         <GeneralApiLoader v-if="!isMobileMode && !activeAutomationId && !activeDashboardId" />
 
         <NcButton
@@ -147,6 +166,19 @@ const topbarBreadcrumbItemWidth = computed(() => {
         </div>
       </div>
     </template>
+
+    <!-- Custom SQL Modal -->
+    <NcModal v-model:visible="isCustomSqlModalOpen" size="large" :closable="true" class="nc-custom-sql-modal" :width="1200">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <GeneralIcon icon="ncCode" class="w-5 h-5" />
+          <span class="text-lg font-semibold">{{ $t('activity.customSqlQuery') || 'Custom SQL Query' }}</span>
+        </div>
+      </template>
+      <div class="h-[80vh] overflow-auto">
+        <GeneralCustomSqlQuery :hide-card="true" />
+      </div>
+    </NcModal>
   </div>
 </template>
 

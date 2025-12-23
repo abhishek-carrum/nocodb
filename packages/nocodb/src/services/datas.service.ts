@@ -1106,4 +1106,68 @@ export class DatasService {
 
     return column;
   }
+
+  async executeCustomSql(
+    context: NcContext,
+    param: {
+      baseId: string;
+      sourceId?: string;
+      sqlQuery: string;
+    },
+  ) {
+    const base = await Base.get(context, param.baseId);
+    if (!base) {
+      NcError.baseNotFound(param.baseId);
+    }
+
+    // Get source - use provided sourceId or get the first source
+    let source;
+    if (param.sourceId) {
+      source = await Source.get(context, param.sourceId);
+    } else {
+      const sources = await base.getSources();
+      if (!sources || sources.length === 0) {
+        NcError.badRequest('No data source found for this base');
+      }
+      source = sources[0];
+    }
+
+    if (!source) {
+      NcError.sourceNotFound(param.sourceId || 'default');
+    }
+
+    // Get database connection
+    const dbDriver = await NcConnectionMgrv2.get(source);
+
+    // Execute the raw SQL query
+    try {
+      const result = await dbDriver.raw(param.sqlQuery);
+
+      // Format the result based on database type
+      let rows = [];
+      if (result && result.rows) {
+        // PostgreSQL returns { rows: [...] }
+        rows = result.rows;
+      } else if (
+        Array.isArray(result) &&
+        result.length > 0 &&
+        Array.isArray(result[0])
+      ) {
+        // MySQL returns [[...], ...]
+        rows = result[0];
+      } else if (Array.isArray(result)) {
+        // SQLite and others return [...]
+        rows = result;
+      } else {
+        rows = result;
+      }
+
+      return {
+        data: rows,
+        count: Array.isArray(rows) ? rows.length : 0,
+      };
+    } catch (error) {
+      throw NcError.badRequest(`SQL query execution failed: ${error.message}`);
+    }
+  }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LoadingOutlined } from '@ant-design/icons-vue'
+import GeneralCustomSqlQuery from '~/components/general/CustomSqlQuery.vue'
 
 const { openedViewsTab } = storeToRefs(useViewsStore())
 const { onViewsTabChange } = useViewsStore()
@@ -130,6 +131,21 @@ watch(
           </div>
         </template>
         <LazySmartsheetDetailsApi v-if="base && meta && view" />
+        <div v-else class="h-full w-full flex flex-col justify-center items-center mt-28 mb-4">
+          <a-spin size="large" :indicator="indicator" />
+        </div>
+      </a-tab-pane>
+
+      <a-tab-pane key="customSql">
+        <template #tab>
+          <div class="tab" data-testid="nc-custom-sql-tab">
+            <GeneralIcon icon="ncCode" class="tab-icon" :class="{}" />
+            <div>{{ $t('activity.customSqlQuery') || 'Custom SQL' }}</div>
+          </div>
+        </template>
+        <div v-if="base" class="h-full overflow-auto p-4">
+          <GeneralCustomSqlQuery v-if="base" />
+        </div>
         <div v-else class="h-full w-full flex flex-col justify-center items-center mt-28 mb-4">
           <a-spin size="large" :indicator="indicator" />
         </div>
